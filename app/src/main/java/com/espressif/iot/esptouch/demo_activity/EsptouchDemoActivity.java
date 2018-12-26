@@ -23,7 +23,6 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioGroup;
@@ -42,7 +41,7 @@ import com.espressif.iot_esptouch_demo.R;
 import java.lang.ref.WeakReference;
 import java.util.List;
 
-public class EsptouchDemoActivity extends AppCompatActivity implements OnClickListener {
+public class EsptouchDemoActivity extends AppCompatActivity {
     private static final String TAG = "EsptouchDemoActivity";
 
     private static final int REQUEST_PERMISSION = 0x01;
@@ -112,7 +111,7 @@ public class EsptouchDemoActivity extends AppCompatActivity implements OnClickLi
         mMessageTV = findViewById(R.id.message);
         mConfirmBtn = findViewById(R.id.confirm_btn);
         mConfirmBtn.setEnabled(false);
-        mConfirmBtn.setOnClickListener(this);
+        mConfirmBtn.setOnClickListener(new EsptouchDemoActivity.ConfirmButtonEventListener());
 
         TextView versionTV = findViewById(R.id.version_tv);
         versionTV.setText(IEsptouchTask.ESPTOUCH_VERSION);
@@ -226,25 +225,6 @@ public class EsptouchDemoActivity extends AppCompatActivity implements OnClickLi
 
         if (!enable) {
             mMessageTV.setText(R.string.location_disable_message);
-        }
-    }
-
-    @Override
-    public void onClick(View v) {
-        if (v == mConfirmBtn) {
-            byte[] ssid = mApSsidTV.getTag() == null ? ByteUtil.getBytesByString(mApSsidTV.getText().toString())
-                    : (byte[]) mApSsidTV.getTag();
-            byte[] password = ByteUtil.getBytesByString(mApPasswordET.getText().toString());
-            byte [] bssid = EspNetUtil.parseBssid2bytes(mApBssidTV.getText().toString());
-            byte[] deviceCount = mDeviceCountET.getText().toString().getBytes();
-            byte[] broadcast = {(byte) (mPackageModeGroup.getCheckedRadioButtonId() == R.id.package_broadcast
-                    ? 1 : 0)};
-
-            if(mTask != null) {
-                mTask.cancelEsptouch();
-            }
-            mTask = new EsptouchAsyncTask4(this);
-            mTask.execute(ssid, bssid, password, deviceCount, broadcast);
         }
     }
 
@@ -397,6 +377,28 @@ public class EsptouchDemoActivity extends AppCompatActivity implements OnClickLi
             }
 
             activity.mTask = null;
+        }
+    }
+
+    private class ConfirmButtonEventListener implements Button.OnClickListener {
+        @Override
+        public void onClick(View v) {
+            if (v != mConfirmBtn) {
+                return;
+            }
+            byte[] ssid = (null == mApSsidTV.getTag()) ? ByteUtil.getBytesByString(mApSsidTV.getText().toString())
+                    : (byte[]) mApSsidTV.getTag();
+            byte[] password = ByteUtil.getBytesByString(mApPasswordET.getText().toString());
+            byte[] bssid = EspNetUtil.parseBssid2bytes(mApBssidTV.getText().toString());
+            byte[] deviceCount = mDeviceCountET.getText().toString().getBytes();
+            byte[] broadcast = {(byte) (mPackageModeGroup.getCheckedRadioButtonId() == R.id.package_broadcast
+                    ? 1 : 0)};
+
+            if (mTask != null) {
+                mTask.cancelEsptouch();
+            }
+            mTask = new EsptouchAsyncTask4(EsptouchDemoActivity.this);
+            mTask.execute(ssid, bssid, password, deviceCount, broadcast);
         }
     }
 }
